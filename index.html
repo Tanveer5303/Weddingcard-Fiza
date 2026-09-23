@@ -680,9 +680,36 @@
     window.addEventListener('pagehide', function(){ if(musicOn){ wasPlaying=true; if(customAudio&&!customAudio.paused)customAudio.pause(); if(audioCtx){try{audioCtx.suspend();}catch(e){}} musicOn=false; reflectMusic(); } });
   })();
 
+  /* ---- tap anywhere to scatter gold sparkles ---- */
+  (function(){
+    if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var colors=['#e3c68a','#c8a15e','#f4e2b0','#a67f3e','#e9ddc7'];
+    var starPath='M12 0l1.8 9.2L24 12l-10.2 2.8L12 24l-1.8-9.2L0 12l10.2-2.8z';
+    document.addEventListener('click', function(e){
+      if(e.target.closest('a,button,#knob,.bottom-nav,.music-btn')) return;
+      var n=5+Math.floor(Math.random()*3);
+      for(var i=0;i<n;i++){
+        (function(){
+          var el=document.createElement('div');
+          var size=8+Math.random()*10;
+          el.style.cssText='position:fixed;left:'+e.clientX+'px;top:'+e.clientY+'px;width:'+size+'px;height:'+size+'px;pointer-events:none;z-index:130;will-change:transform,opacity';
+          el.innerHTML='<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="'+starPath+'" fill="'+colors[Math.floor(Math.random()*colors.length)]+'"/></svg>';
+          document.body.appendChild(el);
+          var ang=Math.random()*Math.PI*2, dist=36+Math.random()*80;
+          var dx=Math.cos(ang)*dist, dy=Math.sin(ang)*dist + 50;
+          var rot=(Math.random()*540-270);
+          var dur=850+Math.random()*700;
+          el.animate([
+            {transform:'translate(-50%,-50%) rotate(0deg) scale(1)',opacity:1},
+            {transform:'translate('+dx+'px,'+dy+'px) rotate('+rot+'deg) scale(.4)',opacity:0}
+          ],{duration:dur,easing:'cubic-bezier(.3,.6,.4,1)'}).onfinish=function(){ el.remove(); };
+        })();
+      }
+    });
+  })();
+
   /* ================= COUNTDOWN ================= */
   (function(){
-    /* Nikah day: 27 October 2026. Adjust time if needed. */
     var target=new Date('2026-10-27T11:00:00+05:30').getTime();
     var dEl=document.getElementById('cd-days'),hEl=document.getElementById('cd-hours'),
         mEl=document.getElementById('cd-mins'),sEl=document.getElementById('cd-secs'),
