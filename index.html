@@ -462,7 +462,7 @@
       <div class="nikah-rule"><span class="ln"></span><svg width="12" height="12" viewBox="0 0 24 24" fill="#c8a15e"><path d="M12 2l2.5 7H22l-6 4.5 2.3 7L12 16l-6.3 4.5L8 13.5 2 9h7.5z"/></svg><span class="ln r"></span></div>
 
       <div class="nk-row"><span class="nk-k">Date</span><span class="nk-v big">Tuesday, 27 October 2026</span></div>
-      <div class="nk-row"><span class="nk-k">Nikah Ceremony</span><span class="nk-v">Between Asr &amp; Maghrib</span></div>
+      <div class="nk-row"><span class="nk-k">Nikah Ceremony</span><span class="nk-v">After Asar</span></div>
       <div class="nk-row"><span class="nk-k">Luncheon</span><span class="nk-v">11:00 AM onwards</span></div>
       <div class="nk-row"><span class="nk-k">Venue</span><span class="nk-v">Gori Garden, Shajapur (M.P.)</span></div>
 
@@ -597,67 +597,53 @@
     /* opens ONLY via the knob */
   })();
 
-  /* ================= MUSIC ================= */
-  /* Add your own royalty-free track: name it music.mp3 and place it beside this
-     file (works great on Netlify). Cache-busting is automatic on every load,
-     so iPhones/Android always fetch the newest file — just replace & redeploy.
-     If none found, a gentle built-in instrumental plays. */
+  /* ================= MUSIC (plays ONLY if music.mp3 is present) ================= */
+  /* Put a royalty-free music.mp3 beside this file to enable music. If no file is
+     present, the music button is hidden and nothing plays. Cache-busting is
+     automatic each load so the newest file is always fetched. */
   var MUSIC_BUST=Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-  var TRACK_CANDIDATES=['music.mp3','music.ogg','assets/music.mp3'].map(function(u){return u+'?cb='+MUSIC_BUST;});
-  var customAudio=null;
-  var musicBtn=document.getElementById('musicBtn'), musicOn=false;
-  var audioCtx=null, masterGain=null, melodyTimer=null;
+  var TRACK_URL='music.mp3?cb='+MUSIC_BUST;
+  var customAudio=null, musicAvailable=false, musicOn=false;
+  var musicBtn=document.getElementById('musicBtn');
   function reflectMusic(){ musicBtn.classList.toggle('playing', musicOn); }
-  /* iOS-friendly: build audio, play real file on the user's tap (no canplaythrough wait) */
+
+  /* hide the button until we confirm a real file exists */
+  if(musicBtn) musicBtn.style.display='none';
+
+  /* check if music.mp3 actually exists before showing the button */
+  (function checkMusic(){
+    try{
+      var probe=new Audio();
+      probe.preload='metadata';
+      probe.addEventListener('loadedmetadata', function(){ musicAvailable=true; if(musicBtn) musicBtn.style.display=''; }, {once:true});
+      probe.addEventListener('error', function(){ musicAvailable=false; if(musicBtn) musicBtn.style.display='none'; }, {once:true});
+      probe.src=TRACK_URL;
+    }catch(e){ musicAvailable=false; }
+  })();
+
   function buildAudio(){
     if(customAudio) return customAudio;
     var a=new Audio(); a.loop=true; a.preload='none';
     a.setAttribute('playsinline',''); a.setAttribute('webkit-playsinline','');
-    a.src=TRACK_CANDIDATES[0];
+    a.src=TRACK_URL;
     customAudio=a; return a;
   }
-  function initAudio(){ if(audioCtx) return; var AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
-    audioCtx=new AC(); masterGain=audioCtx.createGain(); masterGain.gain.value=0; masterGain.connect(audioCtx.destination); }
-  function playNote(freq,time,dur,vol,type){ if(!audioCtx) return;
-    var o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.type=type||'sine'; o.frequency.value=freq;
-    var o2=audioCtx.createOscillator(),g2=audioCtx.createGain(); o2.type='triangle'; o2.frequency.value=freq*2; g2.gain.value=0;
-    o.connect(g); o2.connect(g2); g.connect(masterGain); g2.connect(masterGain);
-    var a=0.05; g.gain.setValueAtTime(0,time); g.gain.linearRampToValueAtTime(vol,time+a); g.gain.exponentialRampToValueAtTime(0.0001,time+dur);
-    g2.gain.setValueAtTime(0,time); g2.gain.linearRampToValueAtTime(vol*0.3,time+a); g2.gain.exponentialRampToValueAtTime(0.0001,time+dur*0.8);
-    o.start(time); o.stop(time+dur+0.05); o2.start(time); o2.stop(time+dur+0.05); }
-  function playPad(freqs,time,dur,vol){ if(!audioCtx) return; freqs.forEach(function(f){
-    var o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.type='sine'; o.frequency.value=f; o.connect(g); g.connect(masterGain);
-    g.gain.setValueAtTime(0,time); g.gain.linearRampToValueAtTime(vol,time+0.6); g.gain.linearRampToValueAtTime(vol,time+dur-0.8); g.gain.exponentialRampToValueAtTime(0.0001,time+dur);
-    o.start(time); o.stop(time+dur+0.05); }); }
-  var N={G3:196,A3:220,Bb3:233.08,C4:261.63,D4:293.66,Eb4:311.13,F4:349.23,G4:392,A4:440,Bb4:466.16,C5:523.25,D5:587.33,Eb5:622.25,F5:698.46,G5:783.99};
-  function scheduleMelody(){ if(!audioCtx) return; var t=audioCtx.currentTime+0.1, b=0.54;
-    var mel=[['G4',1],['Bb4',1],['C5',1.5],['Bb4',.5],['A4',1],['G4',1],['A4',1],['D4',2],
-             ['F4',1],['G4',1],['A4',1.5],['G4',.5],['F4',1],['Eb4',1],['D4',2],
-             ['C5',1],['Bb4',1],['A4',1.5],['G4',.5],['A4',1],['Bb4',1],['G4',3]];
-    var chords=[[N.G3,N.Bb3,N.D4],[N.Eb4,N.G4,N.Bb4],[N.F4,N.A4,N.C5],[N.D4,N.F4,N.A4]];
-    var barLen=4*b, total=mel.reduce(function(s,n){return s+n[1];},0)*b, bars=Math.ceil(total/(4*b));
-    for(var i=0;i<bars;i++) playPad(chords[i%chords.length], t+i*barLen, barLen+0.2, 0.045);
-    var pos=t; mel.forEach(function(n){ playNote(N[n[0]],pos,Math.max(0.5,n[1]*b*1.05),0.13,'triangle');
-      if(mel.indexOf(n)%4===0) playNote(N[n[0]]/2,pos,n[1]*b*1.4,0.05,'sine'); pos+=n[1]*b; });
-    melodyTimer=setTimeout(scheduleMelody, total*1000-150); }
   function startMusic(){
+    if(!musicAvailable) return;           /* no file -> do nothing */
     var a=buildAudio(); a.volume=0;
     var p=a.play();
     if(p&&p.then){
       p.then(function(){ musicOn=true; reflectMusic();
         var v=0,f=setInterval(function(){v=Math.min(0.65,v+0.05);a.volume=v;if(v>=0.65)clearInterval(f);},80);
-      }).catch(function(){ startGen(); });
+      }).catch(function(){ /* couldn't play -> stay silent */ musicOn=false; reflectMusic(); });
     } else { musicOn=true; a.volume=0.6; reflectMusic(); }
   }
-  function startGen(){ initAudio(); if(!audioCtx) return; if(audioCtx.state==='suspended')audioCtx.resume();
-    masterGain.gain.cancelScheduledValues(audioCtx.currentTime); masterGain.gain.setValueAtTime(masterGain.gain.value,audioCtx.currentTime);
-    masterGain.gain.linearRampToValueAtTime(0.5,audioCtx.currentTime+1.2); if(!melodyTimer) scheduleMelody(); musicOn=true; reflectMusic(); }
-  function stopMusic(){ if(customAudio&&!customAudio.paused){ var v=customAudio.volume,f=setInterval(function(){v=Math.max(0,v-0.08);customAudio.volume=v;if(v<=0){clearInterval(f);customAudio.pause();}},60); musicOn=false; reflectMusic(); return; }
-    if(!audioCtx){ musicOn=false; reflectMusic(); return; } masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
-    masterGain.gain.setValueAtTime(masterGain.gain.value,audioCtx.currentTime); masterGain.gain.linearRampToValueAtTime(0,audioCtx.currentTime+0.6);
-    clearTimeout(melodyTimer); melodyTimer=null; musicOn=false; reflectMusic(); }
+  function stopMusic(){
+    if(customAudio && !customAudio.paused){ var v=customAudio.volume,f=setInterval(function(){v=Math.max(0,v-0.08);customAudio.volume=v;if(v<=0){clearInterval(f);customAudio.pause();}},60); }
+    musicOn=false; reflectMusic();
+  }
   function tryPlayMusic(){ startMusic(); }
-  musicBtn.addEventListener('click', function(){ if(musicOn) stopMusic(); else startMusic(); });
+  if(musicBtn) musicBtn.addEventListener('click', function(){ if(musicOn) stopMusic(); else startMusic(); });
   reflectMusic();
 
   /* ---- pause music when user leaves (switch apps / lock / hide tab), resume on return ---- */
@@ -667,17 +653,15 @@
       if(document.hidden && musicOn){
         wasPlaying=true;
         if(customAudio && !customAudio.paused) customAudio.pause();
-        if(audioCtx){ try{ if(masterGain) masterGain.gain.value=0; audioCtx.suspend(); }catch(e){} }
         musicOn=false; reflectMusic();
       } else if(!document.hidden && wasPlaying){
         wasPlaying=false;
         if(customAudio){ customAudio.play().then(function(){ musicOn=true; reflectMusic();
           var v=0,f=setInterval(function(){v=Math.min(0.65,v+0.05);customAudio.volume=v;if(v>=0.65)clearInterval(f);},80); }).catch(function(){}); }
-        else if(audioCtx){ try{audioCtx.resume();}catch(e){} if(masterGain){ masterGain.gain.setValueAtTime(0,audioCtx.currentTime); masterGain.gain.linearRampToValueAtTime(0.5,audioCtx.currentTime+0.8);} musicOn=true; reflectMusic(); }
       }
     }
     document.addEventListener('visibilitychange', onVis);
-    window.addEventListener('pagehide', function(){ if(musicOn){ wasPlaying=true; if(customAudio&&!customAudio.paused)customAudio.pause(); if(audioCtx){try{audioCtx.suspend();}catch(e){}} musicOn=false; reflectMusic(); } });
+    window.addEventListener('pagehide', function(){ if(musicOn){ wasPlaying=true; if(customAudio&&!customAudio.paused)customAudio.pause(); musicOn=false; reflectMusic(); } });
   })();
 
   /* ---- tap anywhere to scatter gold sparkles ---- */
@@ -731,7 +715,7 @@
   /* ================= ADD TO CALENDAR ================= */
   (function(){
     var btn=document.getElementById('calBtn'); if(!btn) return;
-    var v={t:'Nikah — Fiza & Ali', s:'20261027T060000Z', e:'20261027T143000Z', loc:'Gori Garden, Shajapur, MP', d:'Nikah ceremony (between Asr & Maghrib) with luncheon from 11:00 AM.'};
+    var v={t:'Nikah — Fiza & Ali', s:'20261027T060000Z', e:'20261027T143000Z', loc:'Gori Garden, Shajapur, MP', d:'Nikah ceremony (after Asar) with luncheon from 11:00 AM.'};
     btn.addEventListener('click', function(){
       var ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//FizaAli//Nikah//EN','BEGIN:VEVENT','UID:nikah-fizaali@wedding','DTSTAMP:'+v.s,'DTSTART:'+v.s,'DTEND:'+v.e,'SUMMARY:'+v.t,'LOCATION:'+v.loc,'DESCRIPTION:'+v.d,'END:VEVENT','END:VCALENDAR'].join('\r\n');
       var blob=new Blob([ics],{type:'text/calendar;charset=utf-8'}); var url=URL.createObjectURL(blob);
